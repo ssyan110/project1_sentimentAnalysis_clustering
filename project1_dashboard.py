@@ -105,6 +105,13 @@ page = st.sidebar.radio(
     ("📝 Sentiment & Company Explorer", "📊 Project Results")
 )
 
+st.sidebar.markdown("---")
+st.sidebar.markdown("📌 **Group information:**")
+st.sidebar.write("1. Yan Shih Siang")  
+st.sidebar.write("• Email: ssyan110@gmail.com")  
+st.sidebar.write("2. Phạm Tiến Triển ")  
+st.sidebar.write("• Email: Phamtrien0211@gmail.com")
+
 # Page 1: Sentiment & Company Explorer
 if page.startswith("📝"):
     st.title("📝 ITviec Sentiment & Company Explorer")
@@ -244,3 +251,4 @@ elif page.startswith("📊"):
         "<div style='text-align:center; color:gray; font-size:0.9em'>"
         "ITviec Reviews Sentiment & Clustering App · Streamlit Demo"
         "</div>", unsafe_allow_html=True)
+    
