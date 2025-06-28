@@ -106,6 +106,15 @@ page = st.sidebar.radio(
 )
 
 st.sidebar.markdown("---")
+
+st.sidebar.markdown("""
+**Yêu cầu 1:** Các công ty đang nhận nhiều đánh giá (review) từ ứng viên/nhân viên đăng trên ITViec,  
+dựa trên những thông tin này để phân tích cảm xúc (tích cực, tiêu cực, trung tính).
+
+**Yêu cầu 2:** Dựa trên những thông tin từ review của ứng viên/nhân viên đăng trên ITViec để phân cụm thông tin đánh giá (Information Clustering).
+""")
+
+st.sidebar.markdown("---")
 st.sidebar.markdown("📌 **Group information:**")
 st.sidebar.write("1. Yan Shih Siang")  
 st.sidebar.write("• Email: ssyan110@gmail.com")  
