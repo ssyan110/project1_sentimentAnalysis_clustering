@@ -389,23 +389,10 @@ elif page.startswith("📝 Sentiment & Company Explorer"):
         if st.button("Analyze Sentiment"):
             if user_text.strip():
                 if vectorizer and xgb_model:
-                    # Enhanced negative words (add missing common negative words)
-                    enhanced_neg_words = neg_words + [
-                        "ghét", "căm", "thù", "dở", "xàm", "tệ_hại", "kinh_khủng", "phản_cảm", 
-                        "bực", "tức", "giận", "đáng_ghét", "khó_chịu", "chán_nản", "thất_vọng",
-                        "độc_tài", "bóc_lột", "áp_bức", "chèn_ép", "đường_dây", "lừa_đảo",
-                        "siêng", "xấu", "tồi", "dỏm", "phèn", "rác", "ngu", "ngốc", "thua", "yếu"
-                    ]
-                    
-                    # Enhanced positive words  
-                    enhanced_pos_words = pos_words + [
-                        "xuất_sắc", "tuyệt_vời", "hoàn_hảo", "yêu_thích", "hài_lòng", "ổn_định",
-                        "chuyên_nghiệp", "tận_tâm", "nhiệt_tình", "thân_thiện", "hỗ_trợ", "quan_tâm"
-                    ]
                     
                     # Preprocess user input
                     cleaned_text = clean_vn(user_text)
-                    cleaned_text = join_negations(cleaned_text, enhanced_pos_words, enhanced_neg_words)
+                    cleaned_text = join_negations(cleaned_text, pos_words, neg_words)
                 
                     
                     # Vectorize and predict
