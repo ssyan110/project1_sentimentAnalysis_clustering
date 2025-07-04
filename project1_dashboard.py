@@ -70,6 +70,123 @@ def join_negations(text, pos_lexicon, neg_lexicon):
             text = re.sub(rf"{neg}\s+{word}", f"{neg}_{word}", text)
     return text
 
+def analyze_company_feedback(company_data, company_name, cluster_id, all_data):
+    """
+    Analyze what a company is doing well and what needs improvement,
+    then provide actionable suggestions.
+    """
+    feedback = {
+        "strengths": [],
+        "weaknesses": [],
+        "suggestions": []
+    }
+    
+    # Calculate metrics
+    total_reviews = len(company_data)
+    sentiment_dist = company_data["sentiment"].value_counts(normalize=True)
+    avg_rating = company_data["Rating"].mean()
+    recommend_rate = (company_data["Recommend?"] == "Yes").mean() * 100
+    
+    # Rating subscores
+    subscores = {
+        "Salary & benefits": company_data["Salary & benefits"].mean(),
+        "Training & learning": company_data["Training & learning"].mean(), 
+        "Management cares about me": company_data["Management cares about me"].mean(),
+        "Culture & fun": company_data["Culture & fun"].mean(),
+        "Office & workspace": company_data["Office & workspace"].mean()
+    }
+    
+    # Industry averages for comparison
+    industry_avg = {
+        "rating": all_data["Rating"].mean(),
+        "recommend": (all_data["Recommend?"] == "Yes").mean() * 100,
+        "salary": all_data["Salary & benefits"].mean(),
+        "training": all_data["Training & learning"].mean(),
+        "management": all_data["Management cares about me"].mean(),
+        "culture": all_data["Culture & fun"].mean(),
+        "office": all_data["Office & workspace"].mean()
+    }
+    
+    # ANALYZE STRENGTHS
+    if sentiment_dist.get("positive", 0) > 0.6:
+        feedback["strengths"].append(f"🎉 Strong positive sentiment ({sentiment_dist.get('positive', 0):.1%} of reviews)")
+    
+    if avg_rating > industry_avg["rating"] + 0.3:
+        feedback["strengths"].append(f"⭐ Above-average overall rating ({avg_rating:.1f}/5.0 vs industry {industry_avg['rating']:.1f})")
+    
+    if recommend_rate > industry_avg["recommend"] + 10:
+        feedback["strengths"].append(f"👍 High recommendation rate ({recommend_rate:.0f}% vs industry {industry_avg['recommend']:.0f}%)")
+    
+    # Check individual subscores
+    for area, score in subscores.items():
+        if area == "Salary & benefits" and score > industry_avg["salary"] + 0.3:
+            feedback["strengths"].append(f"💰 Excellent {area} ({score:.1f}/5.0)")
+        elif area == "Training & learning" and score > industry_avg["training"] + 0.3:
+            feedback["strengths"].append(f"📚 Strong {area} ({score:.1f}/5.0)")
+        elif area == "Management cares about me" and score > industry_avg["management"] + 0.3:
+            feedback["strengths"].append(f"🤝 Great {area} ({score:.1f}/5.0)")
+        elif area == "Culture & fun" and score > industry_avg["culture"] + 0.3:
+            feedback["strengths"].append(f"🎨 Excellent {area} ({score:.1f}/5.0)")
+        elif area == "Office & workspace" and score > industry_avg["office"] + 0.3:
+            feedback["strengths"].append(f"🏢 Great {area} ({score:.1f}/5.0)")
+    
+    # ANALYZE WEAKNESSES  
+    if sentiment_dist.get("negative", 0) > 0.3:
+        feedback["weaknesses"].append(f"⚠️ High negative sentiment ({sentiment_dist.get('negative', 0):.1%} of reviews)")
+    
+    if avg_rating < industry_avg["rating"] - 0.3:
+        feedback["weaknesses"].append(f"📉 Below-average rating ({avg_rating:.1f}/5.0 vs industry {industry_avg['rating']:.1f})")
+    
+    if recommend_rate < industry_avg["recommend"] - 10:
+        feedback["weaknesses"].append(f"👎 Low recommendation rate ({recommend_rate:.0f}% vs industry {industry_avg['recommend']:.0f}%)")
+    
+    # Check weak subscores
+    weak_areas = []
+    for area, score in subscores.items():
+        if area == "Salary & benefits" and score < industry_avg["salary"] - 0.3:
+            weak_areas.append(f"💸 {area} needs improvement ({score:.1f}/5.0)")
+        elif area == "Training & learning" and score < industry_avg["training"] - 0.3:
+            weak_areas.append(f"📖 {area} needs attention ({score:.1f}/5.0)")  
+        elif area == "Management cares about me" and score < industry_avg["management"] - 0.3:
+            weak_areas.append(f"👔 {area} needs work ({score:.1f}/5.0)")
+        elif area == "Culture & fun" and score < industry_avg["culture"] - 0.3:
+            weak_areas.append(f"🎭 {area} could be better ({score:.1f}/5.0)")
+        elif area == "Office & workspace" and score < industry_avg["office"] - 0.3:
+            weak_areas.append(f"🏗️ {area} needs upgrading ({score:.1f}/5.0)")
+    
+    feedback["weaknesses"].extend(weak_areas)
+    
+    # GENERATE SUGGESTIONS based on cluster and weaknesses
+    if cluster_id == 0:  # Teamwork & friendly environment cluster
+        if any("Management" in w for w in weak_areas):
+            feedback["suggestions"].append("🤝 Focus on leadership training and team-building activities")
+        if any("Culture" in w for w in weak_areas):
+            feedback["suggestions"].append("🎨 Organize more team events and improve communication channels")
+        feedback["suggestions"].append("👥 Leverage your strength in teamwork by creating mentorship programs")
+        
+    elif cluster_id == 1:  # Comfort & benefits cluster  
+        if any("Salary" in w for w in weak_areas):
+            feedback["suggestions"].append("💰 Review compensation packages and benchmark against market rates")
+        if any("Office" in w for w in weak_areas):
+            feedback["suggestions"].append("🏢 Invest in workspace improvements and modern facilities")
+        feedback["suggestions"].append("🛡️ Enhance employee benefits packages (health, wellness, flexibility)")
+        
+    elif cluster_id == 2:  # Learning & growth cluster
+        if any("Training" in w for w in weak_areas):
+            feedback["suggestions"].append("📚 Develop comprehensive learning paths and skill development programs")
+        if any("Management" in w for w in weak_areas):
+            feedback["suggestions"].append("📈 Implement regular career progression discussions and goal setting")
+        feedback["suggestions"].append("🚀 Create innovation time and project-based learning opportunities")
+    
+    # General suggestions based on common issues
+    if sentiment_dist.get("negative", 0) > 0.3:
+        feedback["suggestions"].append("🔍 Conduct exit interviews and employee surveys to identify specific pain points")
+    
+    if recommend_rate < 70:
+        feedback["suggestions"].append("💬 Implement regular one-on-one meetings and feedback sessions")
+    
+    return feedback
+
 # Page config
 st.set_page_config(page_title="ITviec Review Analyzer", layout="wide")
 
@@ -121,6 +238,7 @@ st.sidebar.write("• Email: ssyan110@gmail.com")
 st.sidebar.write("2. Phạm Tiến Triển ")  
 st.sidebar.write("• Email: Phamtrien0211@gmail.com")
 
+
 # Page 1: Sentiment & Company Explorer
 if page.startswith("📝"):
     st.title("📝 ITviec Sentiment & Company Explorer")
@@ -156,9 +274,40 @@ if page.startswith("📝"):
             st.info(f"**Overall Company Sentiment:** {major_sent.title()}")
 
             # Word Cloud
-            text = " ".join(cdata["clean_review"])
-            wc = WordCloud(width=800, height=300, background_color="white").generate(text)
-            st.image(wc.to_array(), caption="Word Cloud from Company Reviews", use_container_width=True)
+            # Additional filtering for better word cloud quality
+            additional_stopwords = {
+                "không", "công_ty", "công", "ty", "được", "có", "là", "và", "của", "cho", "với", "từ", "trong", "này", 
+                "đó", "thì", "sẽ", "đã", "đang", "rất", "nhiều", "ở", "về", "như", "khi", "nếu", "mà", "để", "bị", 
+                "những", "các", "một", "hai", "ba", "cũng", "nữa", "thêm", "khác", "chỉ", "vào", "ra", "lên", "xuống", "nhân_viên", "công_việc", "làm_việc", "văn_phòng"
+            }
+            
+            # Clean and filter the text
+            all_words = []
+            for review in cdata["clean_review"].dropna():
+                words = review.split()
+                # Filter out additional stopwords and short words
+                filtered_words = [word for word in words 
+                                if word not in additional_stopwords 
+                                and len(word) > 2 
+                                and not word.isdigit()]
+                all_words.extend(filtered_words)
+            
+            clean_text = " ".join(all_words)
+            
+            if clean_text.strip():
+                wc = WordCloud(
+                    width=800, 
+                    height=300, 
+                    background_color="white",
+                    max_words=50, 
+                    relative_scaling=0.5,  
+                    colormap='viridis', 
+                    min_font_size=10,
+                    max_font_size=100
+                ).generate(clean_text)
+                st.image(wc.to_array(), caption="Word Cloud from Company Reviews (Filtered)", use_container_width=True)
+            else:
+                st.info("No sufficient text data available for word cloud generation.")
 
             # Cluster Assignment
             cluster_row = cluster_df[cluster_df["Company Name"] == company_name]
@@ -168,14 +317,89 @@ if page.startswith("📝"):
                 
                 # Add clear cluster descriptions
                 if cluster_id == 0:
-                    st.info("**Cluster 0**: Focus on teamwork, friendly environment (e.g., 'nhân viên', 'đội', 'thân thiện').")
+                    st.info("**Cluster 0**: Staffs talked about teamwork, friendly environment (e.g., 'nhân viên', 'đội', 'thân thiện') the most.")
                 elif cluster_id == 1:
-                    st.info("**Cluster 1**: Emphasis on comfort, benefits, clear policies (e.g., 'thoải mái', 'chế độ').")
+                    st.info("**Cluster 1**: Staffs talked about comfort, benefits, clear policies (e.g., 'thoải mái', 'chế độ') the most.")
                 elif cluster_id == 2:
-                    st.info("**Cluster 2**: Focus on learning, projects, growth (e.g., 'dự án', 'học hỏi').")
+                    st.info("**Cluster 2**: Staffs talked about learning, projects, growth (e.g., 'dự án', 'học hỏi') the most.")
                 
                 if cluster_terms is not None and cluster_id in cluster_terms:
                     st.markdown(f"**Cluster Terms:** {', '.join(cluster_terms[cluster_id])}")
+                    
+                # Company Performance Analysis & Feedback
+                st.markdown("---")
+                st.subheader("📊 Company Performance Analysis & Recommendations")
+                
+                feedback = analyze_company_feedback(cdata, company_name, cluster_id, reviews_df)
+                
+                # Create three columns for feedback
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.markdown("### 🎯 **What You're Doing Well**")
+                    if feedback["strengths"]:
+                        for strength in feedback["strengths"]:
+                            st.success(strength)
+                    else:
+                        st.info("Continue working on building your strengths! 💪")
+                
+                with col2:
+                    st.markdown("### ⚠️ **Areas for Improvement**")
+                    if feedback["weaknesses"]:
+                        for weakness in feedback["weaknesses"]:
+                            st.warning(weakness)
+                    else:
+                        st.success("Great job! No major weaknesses identified! 🌟")
+                
+                with col3:
+                    st.markdown("### 💡 **Actionable Suggestions**")
+                    if feedback["suggestions"]:
+                        for suggestion in feedback["suggestions"]:
+                            st.info(suggestion)
+                    else:
+                        st.success("Keep up the excellent work! 🚀")
+                
+                # Additional insights
+                st.markdown("---")
+                st.markdown("### 📈 **Detailed Rating Breakdown**")
+                rating_data = {
+                    "Area": ["Salary & benefits", "Training & learning", "Management cares about me", "Culture & fun", "Office & workspace"],
+                    "Your Score": [
+                        cdata["Salary & benefits"].mean(),
+                        cdata["Training & learning"].mean(),
+                        cdata["Management cares about me"].mean(),
+                        cdata["Culture & fun"].mean(),
+                        cdata["Office & workspace"].mean()
+                    ],
+                    "Industry Avg": [
+                        reviews_df["Salary & benefits"].mean(),
+                        reviews_df["Training & learning"].mean(),
+                        reviews_df["Management cares about me"].mean(),
+                        reviews_df["Culture & fun"].mean(),
+                        reviews_df["Office & workspace"].mean()
+                    ]
+                }
+                
+                import pandas as pd
+                rating_df = pd.DataFrame(rating_data)
+                rating_df["Difference"] = rating_df["Your Score"] - rating_df["Industry Avg"]
+                rating_df["Your Score"] = rating_df["Your Score"].round(2)
+                rating_df["Industry Avg"] = rating_df["Industry Avg"].round(2)
+                rating_df["Difference"] = rating_df["Difference"].round(2)
+                
+                st.dataframe(
+                    rating_df.style.format({
+                        "Your Score": "{:.2f}",
+                        "Industry Avg": "{:.2f}",
+                        "Difference": "{:+.2f}"
+                    }).applymap(
+                        lambda x: 'background-color: lightgreen' if isinstance(x, (int, float)) and x > 0 else 
+                                 'background-color: lightcoral' if isinstance(x, (int, float)) and x < -0.2 else '',
+                        subset=['Difference']
+                    ),
+                    use_container_width=True
+                )
+                
             else:
                 st.warning("Company not found in cluster results.")
 
@@ -269,4 +493,3 @@ elif page.startswith("📊"):
         "<div style='text-align:center; color:gray; font-size:0.9em'>"
         "ITviec Reviews Sentiment & Clustering App · Streamlit Demo"
         "</div>", unsafe_allow_html=True)
-    
