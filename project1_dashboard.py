@@ -165,6 +165,15 @@ if page.startswith("📝"):
             if not cluster_row.empty:
                 cluster_id = cluster_row["cluster"].values[0]
                 st.markdown(f"**Company Cluster:** {cluster_id}")
+                
+                # Add clear cluster descriptions
+                if cluster_id == 0:
+                    st.info("**Cluster 0**: Focus on teamwork, friendly environment (e.g., 'nhân viên', 'đội', 'thân thiện').")
+                elif cluster_id == 1:
+                    st.info("**Cluster 1**: Emphasis on comfort, benefits, clear policies (e.g., 'thoải mái', 'chế độ').")
+                elif cluster_id == 2:
+                    st.info("**Cluster 2**: Focus on learning, projects, growth (e.g., 'dự án', 'học hỏi').")
+                
                 if cluster_terms is not None and cluster_id in cluster_terms:
                     st.markdown(f"**Cluster Terms:** {', '.join(cluster_terms[cluster_id])}")
             else:
