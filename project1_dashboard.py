@@ -45,8 +45,23 @@ def normalize_repeated_characters(txt: str, max_repeat: int = 2) -> str:
     return REP_CHAR_RE.sub(lambda m: m.group(1) * max_repeat, txt)
 
 def _join_prefixes(txt: str) -> str:
-    for p in NEGATION_WORDS:
+    # Define comprehensive negation and intensifier patterns
+    NEG_PREFIXES = ["không", "chưa", "chẳng", "chả", "chớ", "đừng", "chẳng", "chả"]
+    INTEN_PREFIXES = ["rất", "cực", "siêu", "quá", "hơi", "khá", "tương_đối", "hoàn_toàn"]
+    
+    # Single-word prefixes
+    for p in NEG_PREFIXES + INTEN_PREFIXES:
         txt = re.sub(rf"\b{p}\s+(\w+)", rf"{p}_\1", txt)
+    
+    # Two-word prefixes
+    txt = re.sub(r"\bcực\s+kỳ\s+(\w+)", r"cực_kỳ_\1", txt)
+    txt = re.sub(r"\bvô\s+cùng\s+(\w+)", r"vô_cùng_\1", txt)
+    txt = re.sub(r"\bhoàn\s+toàn\s+(\w+)", r"hoàn_toàn_\1", txt)
+    
+    # Handle common negative phrases
+    txt = re.sub(r"\bkhông\s+có\s+(\w+)", r"không_có_\1", txt)
+    txt = re.sub(r"\bchẳng\s+có\s+(\w+)", r"chẳng_có_\1", txt)
+    
     return txt
 
 def clean_vn(text: str) -> str:
@@ -63,18 +78,24 @@ def clean_vn(text: str) -> str:
     return " ".join(tokens)
 
 def join_negations(text, pos_lexicon, neg_lexicon):
-    for neg in NEGATION_WORDS:
-        for word in pos_lexicon:
-            text = re.sub(rf"{neg}\s+{word}", f"{neg}_{word}", text)
-        for word in neg_lexicon:
-            text = re.sub(rf"{neg}\s+{word}", f"{neg}_{word}", text)
+    # Enhanced negation words
+    negation_words = ["không", "chưa", "chẳng", "chả", "chớ", "đừng"]
+    
+    # Convert to lowercase for consistency  
+    text = text.lower()
+    
+    # Join negations with sentiment words
+    for neg in negation_words:
+        for word in pos_lexicon + neg_lexicon:
+            # Use word boundaries to avoid partial matches
+            pattern = rf"\b{neg}\s+{re.escape(word)}\b"
+            replacement = f"{neg}_{word}"
+            text = re.sub(pattern, replacement, text)
+    
     return text
 
 def analyze_company_feedback(company_data, company_name, cluster_id, all_data):
-    """
-    Analyze what a company is doing well and what needs improvement,
-    then provide actionable suggestions.
-    """
+
     feedback = {
         "strengths": [],
         "weaknesses": [],
@@ -219,17 +240,8 @@ LABEL_MAP = {0: "Negative", 1: "Neutral", 2: "Positive"}
 # Sidebar navigation
 page = st.sidebar.radio(
     "📑 Select a page",
-    ("📝 Sentiment & Company Explorer", "📊 Project Results")
+    ("💡Introduction","📝 Sentiment & Company Explorer", "📊 Project Results")
 )
-
-st.sidebar.markdown("---")
-
-st.sidebar.markdown("""
-**Yêu cầu 1:** Các công ty đang nhận nhiều đánh giá (review) từ ứng viên/nhân viên đăng trên ITViec,  
-dựa trên những thông tin này để phân tích cảm xúc (tích cực, tiêu cực, trung tính).
-
-**Yêu cầu 2:** Dựa trên những thông tin từ review của ứng viên/nhân viên đăng trên ITViec để phân cụm thông tin đánh giá (Information Clustering).
-""")
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("📌 **Group information:**")
@@ -238,25 +250,176 @@ st.sidebar.write("• Email: ssyan110@gmail.com")
 st.sidebar.write("2. Phạm Tiến Triển ")  
 st.sidebar.write("• Email: Phamtrien0211@gmail.com")
 
+# Introduction Page
+if page.startswith("💡Introducti"):
+    # Header with logo placeholder
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("""
+        <div style='text-align: center; margin-bottom: 2rem;'>
+            <h1 style='color: #FF6B35; margin-bottom: 1rem;'>🚀 ITviec Review Analyzer</h1>
+            <p style='font-size: 1.2em; color: #666; margin-bottom: 2rem;'>Advanced Sentiment Analysis & Company Clustering Platform</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Logo placeholder - user can replace this
+        st.image('itvieclogo.png', width=1000)
 
-# Page 1: Sentiment & Company Explorer
-if page.startswith("📝"):
+    # Project Overview
+    st.markdown("---")
+    st.markdown("## 📋 Project Overview")
+    
+    st.markdown("""
+    Ứng dụng này phân tích các đánh giá của nhân viên trên ITviec (cổng thông tin việc làm IT hàng đầu tại Việt Nam) nhằm cung cấp những hiểu biết hữu ích cho cả người tìm việc lẫn doanh nghiệp.
+    Bằng cách sử dụng các kỹ thuật học máy tiên tiến, chúng tôi thực hiện phân tích cảm xúc và phân cụm công ty để hiểu rõ hơn về môi trường làm việc trong ngành CNTT tại Việt Nam.
+    """)
+    
+    # Task Requirements
+    st.markdown("---")
+    st.markdown("## 🎯 Project Requirements")
+    
+    # Task 1
+    st.markdown("### 📊 Yêu cầu 1: Phân tích cảm xúc (Sentiment Analysis)")
+    st.info("""
+    **Mục tiêu**: Các công ty đang nhận nhiều đánh giá (review) từ ứng viên/nhân viên đăng trên ITViec, 
+    dựa trên những thông tin này để phân tích cảm xúc (tích cực, tiêu cực, trung tính).
+    
+    **Giải pháp**: 
+    - ✅ Sử dụng machine learning models (XGBoost, SVM, Logistic Regression, etc.)
+    - ✅ Preprocessing text tiếng Việt với underthesea, stopwords, teencode
+    - ✅ TF-IDF vectorization để chuyển đổi text thành số
+    - ✅ Đánh giá model với accuracy, precision, recall, F1-score
+    """)
+    
+    # Task 2  
+    st.markdown("### 🔍 Yêu cầu 2: Phân cụm thông tin (Information Clustering)")
+    st.info("""
+    **Mục tiêu**: Dựa trên những thông tin từ review của ứng viên/nhân viên đăng trên ITViec để phân cụm thông tin đánh giá (Information Clustering).
+    
+    **Giải pháp**:
+    - ✅ Sử dụng LDA (Latent Dirichlet Allocation) để tìm chủ đề trong reviews
+    - ✅ K-Means clustering để nhóm các công ty có đặc điểm tương tự
+    - ✅ PCA visualization để hiển thị clusters
+    - ✅ Word clouds để hiển thị từ khóa đặc trưng của mỗi cluster
+    """)
+    
+    # Technical Features
+    st.markdown("---")
+    st.markdown("## 🔧 Technical Features")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### 🤖 Machine Learning Models")
+        st.success("✅ XGBoost (Best Performance)")
+        st.success("✅ Support Vector Machine") 
+        st.success("✅ Logistic Regression")
+        st.success("✅ Random Forest")
+        st.success("✅ Naive Bayes")
+        st.success("✅ KNN")
+        
+    with col2:
+        st.markdown("### 📈 Analytics & Insights")
+        st.success("✅ Real-time Sentiment Prediction")
+        st.success("✅ Company Performance Analysis")
+        st.success("✅ Actionable Recommendations") 
+        st.success("✅ Visualizations")
+        st.success("✅ Word Cloud Generation")
+        st.success("✅ Cluster Analysis")
+    
+    # Dataset Information
+    st.markdown("---")
+    st.markdown("## 📊 Dataset Information")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric("Total Reviews", f"{len(reviews_df):,}", help="Number of employee reviews analyzed")
+        
+    with col2:
+        st.metric("Companies", f"{reviews_df['Company Name'].nunique():,}", help="Number of IT companies in dataset")
+        
+    with col3:
+        st.metric("Data Sources", "ITviec.com", help="Leading IT job portal in Vietnam")
+    
+    # Cluster Overview
+    if cluster_df is not None:
+        st.markdown("---")
+        st.markdown("## 🎯 Company Clusters Discovered")
+        
+        cluster_info = cluster_df['cluster'].value_counts().sort_index()
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.markdown("#### 🤝 Cluster 0: Teamwork Focus")
+            st.info(f"**{cluster_info.get(0, 0)} companies**")
+            st.write("Keywords: nhân viên, đội, thân thiện, hợp tác")
+            
+        with col2:
+            st.markdown("#### 🏢 Cluster 1: Benefits & Comfort")
+            st.info(f"**{cluster_info.get(1, 0)} companies**")
+            st.write("Keywords: thoải mái, chế độ, phúc lợi, môi trường")
+            
+        with col3:
+            st.markdown("#### 📚 Cluster 2: Learning & Growth")
+            st.info(f"**{cluster_info.get(2, 0)} companies**")
+            st.write("Keywords: dự án, học hỏi, phát triển, kinh nghiệm")
+       
+    # Footer
+    st.markdown("---")
+    st.markdown("""
+    <div style='text-align: center; color: #888; padding: 2rem;'>
+        <p><strong>ITviec Review Analyzer</strong> - Empowering data-driven decisions in Vietnam's IT industry</p>
+        <p>Project này là đồ án tốt nghiệp của khoá DL07</p>
+        <p>Giáo viên Hướng dẫn: Ms. Khuất Thùy Phương</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Sentiment & Company Explorer page
+elif page.startswith("📝 Sentiment & Company Explorer"):
     st.title("📝 ITviec Sentiment & Company Explorer")
     tab1, tab2 = st.tabs(["Sentence Sentiment", "Company View"])
 
     with tab1:
         st.subheader("Predict Sentiment of a Sentence")
         user_text = st.text_area("Enter a Vietnamese sentence to analyze sentiment", "")
+    
+        
         if st.button("Analyze Sentiment"):
             if user_text.strip():
                 if vectorizer and xgb_model:
+                    # Enhanced negative words (add missing common negative words)
+                    enhanced_neg_words = neg_words + [
+                        "ghét", "căm", "thù", "dở", "xàm", "tệ_hại", "kinh_khủng", "phản_cảm", 
+                        "bực", "tức", "giận", "đáng_ghét", "khó_chịu", "chán_nản", "thất_vọng",
+                        "độc_tài", "bóc_lột", "áp_bức", "chèn_ép", "đường_dây", "lừa_đảo",
+                        "siêng", "xấu", "tồi", "dỏm", "phèn", "rác", "ngu", "ngốc", "thua", "yếu"
+                    ]
+                    
+                    # Enhanced positive words  
+                    enhanced_pos_words = pos_words + [
+                        "xuất_sắc", "tuyệt_vời", "hoàn_hảo", "yêu_thích", "hài_lòng", "ổn_định",
+                        "chuyên_nghiệp", "tận_tâm", "nhiệt_tình", "thân_thiện", "hỗ_trợ", "quan_tâm"
+                    ]
+                    
                     # Preprocess user input
                     cleaned_text = clean_vn(user_text)
-                    cleaned_text = join_negations(cleaned_text, pos_words, neg_words)
+                    cleaned_text = join_negations(cleaned_text, enhanced_pos_words, enhanced_neg_words)
+                
+                    
                     # Vectorize and predict
                     text_vec = vectorizer.transform([cleaned_text])
                     pred = xgb_model.predict(text_vec)[0]
-                    st.success(f"**Predicted Sentiment:** {LABEL_MAP[pred]}")
+                    
+                    # Color code the result
+                    if pred == 0:  # Negative
+                        st.error(f"**Predicted Sentiment:** {LABEL_MAP[pred]}")
+                    elif pred == 1:  # Neutral  
+                        st.warning(f"**Predicted Sentiment:** {LABEL_MAP[pred]}")
+                    else:  # Positive
+                        st.success(f"**Predicted Sentiment:** {LABEL_MAP[pred]}")
+                        
                 else:
                     st.warning("XGBoost model or vectorizer not available. Check outputs/tfidf_vectorizer.joblib and outputs/xgboost_sentiment_model.joblib.")
             else:
@@ -403,8 +566,8 @@ if page.startswith("📝"):
             else:
                 st.warning("Company not found in cluster results.")
 
-# Page 2: Project Results
-elif page.startswith("📊"):
+# Project Results page
+elif page.startswith("📊 Project Results"):
     st.title("📊 Project Results & Visualizations")
     st.markdown("#### Select a result below to inspect:")
 
