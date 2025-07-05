@@ -467,11 +467,11 @@ elif page.startswith("📝 Sentiment & Company Explorer"):
                 
                 # Add clear cluster descriptions
                 if cluster_id == 0:
-                    st.info("**Cluster 0**: Staffs talked about teamwork, friendly environment (e.g., 'nhân viên', 'đội', 'thân thiện') the most.")
+                    st.info("**Cluster 0**: Staffs talked about teamwork, friendly environment the most.")
                 elif cluster_id == 1:
-                    st.info("**Cluster 1**: Staffs talked about comfort, benefits, clear policies (e.g., 'thoải mái', 'chế độ') the most.")
+                    st.info("**Cluster 1**: Staffs talked about comfort, benefits, clear policies the most.")
                 elif cluster_id == 2:
-                    st.info("**Cluster 2**: Staffs talked about learning, projects, growth (e.g., 'dự án', 'học hỏi') the most.")
+                    st.info("**Cluster 2**: Staffs talked about learning, projects, growth the most.")
                 
                 if cluster_terms is not None and cluster_id in cluster_terms:
                     st.markdown(f"**Cluster Terms:** {', '.join(cluster_terms[cluster_id])}")
@@ -630,13 +630,13 @@ elif page.startswith("📊 Project Results"):
             st.markdown("**Insights:** Clear separation of three clusters using LDA + KMeans.")
         elif selected == "Word Cloud: Cluster 0":
             st.caption("Frequent keywords in Cluster 0.")
-            st.info("**Cluster 0**: Focus on teamwork, friendly environment (e.g., 'nhân viên', 'đội', 'thân thiện').")
+            st.info("**Cluster 0**: Focus on teamwork, friendly environment")
         elif selected == "Word Cloud: Cluster 1":
             st.caption("Frequent keywords in Cluster 1.")
-            st.info("**Cluster 1**: Emphasis on comfort, benefits, clear policies (e.g., 'thoải mái', 'chế độ').")
+            st.info("**Cluster 1**: Emphasis on comfort, benefits, clear policies")
         elif selected == "Word Cloud: Cluster 2":
             st.caption("Frequent keywords in Cluster 2.")
-            st.info("**Cluster 2**: Focus on learning, projects, growth (e.g., 'dự án', 'học hỏi').")
+            st.info("**Cluster 2**: Focus on learning, projects, growth")
 
     st.markdown("---")
     st.markdown(
