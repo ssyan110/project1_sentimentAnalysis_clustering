@@ -543,7 +543,7 @@ elif page.startswith("📝 Sentiment & Company Explorer"):
                         "Industry Avg": "{:.2f}",
                         "Difference": "{:+.2f}"
                     }).applymap(
-                        lambda x: 'background-color: lightgreen' if isinstance(x, (int, float)) and x > 0 else 
+                        lambda x: 'background-color: green' if isinstance(x, (int, float)) and x > 0 else 
                                  'background-color: lightcoral' if isinstance(x, (int, float)) and x < -0.2 else '',
                         subset=['Difference']
                     ),
